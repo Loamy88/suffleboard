@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon';
+import * as CANNON from 'cannon-es';
 import { createMaterial } from './utils.js';
 
 class Board {
@@ -80,4 +80,5 @@ class Board {
 }
 
 export default Board;
+
 
