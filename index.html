@@ -5,18 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Shuffleboard Game</title>
     <link rel="stylesheet" href="css/style.css">
-    <!-- Load Three.js as a module -->
     <link rel="icon" href="data:;base64,iVBORw0KGgo=">
     <script type="importmap">
     {
         "imports": {
             "three": "https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.module.js",
-            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.132.2/examples/jsm/"
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.132.2/examples/jsm/",
+            "cannon-es": "https://unpkg.com/cannon-es@0.20.0/dist/cannon-es.js"
         }
     }
     </script>
-    <!-- Load Cannon.js as a global variable -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
 </head>
 <body>
     <div id="game-container">
