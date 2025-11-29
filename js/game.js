@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon';
 import Player from './player.js';
 import Board from './board.js';
 import Disc from './disc.js';
@@ -396,3 +395,4 @@ class ShuffleboardGame {
 window.addEventListener('load', () => {
     const game = new ShuffleboardGame();
 });
+
