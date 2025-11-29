@@ -3,97 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Shuffleboard</title>
-    <style>
-        body { 
-            margin: 0; 
-            overflow: hidden; 
-            font-family: Arial, sans-serif;
-        }
-        #game-container {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-        }
-        #ui {
-            position: absolute;
-            top: 20px;
-            left: 0;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            gap: 40px;
-            color: white;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-            font-size: 24px;
-            pointer-events: none;
-        }
-        #power-meter {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 200px;
-            height: 20px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 10px;
-            overflow: hidden;
-            display: none;
-        }
-        #power-fill {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(90deg, #4CAF50, #FFC107, #FF5722);
-            transition: width 0.1s;
-        }
-        #message {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.8);
-            color: white;
-            padding: 20px 40px;
-            border-radius: 10px;
-            font-size: 24px;
-            display: none;
-            text-align: center;
-        }
-        #instructions {
-            position: absolute;
-            bottom: 60px;
-            left: 20px;
-            color: white;
-            background: rgba(0,0,0,0.5);
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 14px;
-            max-width: 300px;
-        }
-    </style>
+    <title>3D Shuffleboard Game</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/disc.js"></script>
+    <script src="js/board.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/game.js" type="module"></script>
 </head>
 <body>
     <div id="game-container">
         <div id="ui">
-            <div id="player1-score">Player 1: 0</div>
-            <div id="round">Round: 1</div>
-            <div id="player2-score">Player 2: 0</div>
-        </div>
-        <div id="power-meter">
-            <div id="power-fill"></div>
-        </div>
-        <div id="message"></div>
-        <div id="instructions">
-            <b>Controls:</b><br>
-            A/D or Left/Right: Move<br>
-            W/S or Up/Down: Adjust angle<br>
-            Hold SPACE: Charge shot<br>
-            Release SPACE: Shoot
+            <div id="score">
+                <div>Player 1: <span id="player1-score">0</span></div>
+                <div>Player 2: <span id="player2-score">0</span></div>
+            </div>
+            <div id="turn-indicator">Player 1's Turn</div>
+            <div id="power-meter">
+                <div id="power-bar"></div>
+            </div>
+            <div id="message"></div>
         </div>
     </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
-    <script src="game.js"></script>
 </body>
 </html>
