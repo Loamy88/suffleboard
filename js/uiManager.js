@@ -59,9 +59,20 @@ class UIManager {
     }
 
     showError(message) {
-        this.showMessage('Error', message, 'OK', () => {
-            window.location.reload();
-        });
+        console.error('UI Error:', message);
+        try {
+            if (this.elements.messageBox?.container) {
+                this.showMessage('Error', message, 'OK', () => {
+                    window.location.reload();
+                });
+            } else {
+                // Fallback if UI isn't ready
+                alert('Error: ' + message);
+            }
+        } catch (error) {
+            console.error('Error showing error message:', error);
+            alert('Error: ' + message);
+        }
     }
 
     updateLoadingText(text) {
@@ -80,12 +91,25 @@ class UIManager {
     }
 
     bindEvents() {
-        // Menu buttons
-        this.elements.startButton?.addEventListener('click', () => this.emit('startGame'));
-        this.elements.howToPlayButton?.addEventListener('click', () => this.showModal('howToPlay'));
-        this.elements.settingsButton?.addEventListener('click', () => this.showModal('settings'));
-        this.elements.menuButton?.addEventListener('click', () => this.toggleMenu());
+        try {
+            // Menu buttons
+            if (this.elements.startButton) {
+                this.elements.startButton.addEventListener('click', () => this.emit('startGame'));
+            }
+            if (this.elements.howToPlayButton) {
+                this.elements.howToPlayButton.addEventListener('click', () => this.showModal('howToPlay'));
+            }
+            if (this.elements.settingsButton) {
+                this.elements.settingsButton.addEventListener('click', () => this.showModal('settings'));
+            }
+            if (this.elements.menuButton) {
+                this.elements.menuButton.addEventListener('click', () => this.toggleMenu());
+            }
         
+        } catch (error) {
+            console.error('Error binding UI events:', error);
+        }
+
         // Modal close buttons
         document.querySelectorAll('.modal-close').forEach(button => {
             button.addEventListener('click', () => this.hideModal());
@@ -253,23 +277,12 @@ class UIManager {
         });
         
         // Show the requested modal
-        switch(modalName) {
-            case 'howToPlay':
-                this.elements.howToPlayModal.classList.add('active');
-                break;
-            case 'settings':
-                this.elements.settingsModal.classList.add('active');
-                break;
-            case 'gameOver':
-                this.elements.gameOverModal.classList.add('active');
-                break;
-            case 'message':
-                this.elements.messageBox.container.classList.add('active');
-                break;
+        const modal = this.elements[`${modalName}Modal`];
+        if (modal) {
+            modal.classList.add('active');
+            this.isModalOpen = true;
+            document.body.classList.add('modal-open');
         }
-        
-        this.isModalOpen = true;
-        document.body.classList.add('modal-open');
     }
 
     hideModal() {

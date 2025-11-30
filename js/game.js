@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import * as CANNON from 'cannon-es';
+import Stats from 'three/examples/jsm/libs/stats.module.js';
 import Board from './board.js';
 import Player from './player.js';
 import CameraController from './cameraController.js';
@@ -167,13 +168,18 @@ class ShuffleboardGame {
         // Handle window resize
         window.addEventListener('resize', () => this.onWindowResize(), false);
         
-        // Add stats for performance monitoring
-        this.stats = new Stats();
-        this.stats.domElement.style.position = 'absolute';
-        this.stats.domElement.style.top = '10px';
-        this.stats.domElement.style.left = '10px';
-        this.stats.domElement.style.display = 'none'; // Hidden by default
-        container.appendChild(this.stats.domElement);
+        // Add stats for performance monitoring (optional)
+        try {
+            this.stats = new Stats();
+            this.stats.domElement.style.position = 'absolute';
+            this.stats.domElement.style.top = '10px';
+            this.stats.domElement.style.left = '10px';
+            this.stats.domElement.style.display = 'none'; // Hidden by default
+            container.appendChild(this.stats.domElement);
+        } catch (e) {
+            console.warn('Could not initialize Stats:', e);
+            this.stats = null;
+        }
     }
 
     setupPhysics() {
@@ -605,29 +611,24 @@ class ShuffleboardGame {
         
         const delta = this.clock.getDelta();
         
-        // Handle continuous input
-        if (this.gameState === 'aiming' || this.gameState === 'charging') {
-            const currentPlayer = this.getCurrentPlayer();
-            
-            if (this.moveDirection !== 0) {
-                currentPlayer.move(this.moveDirection, delta);
-            }
-            
-            if (this.rotateDirection !== 0) {
-                currentPlayer.rotate(this.rotateDirection, delta);
-            }
-            
-            // Update power meter
-            if (this.gameState === 'charging') {
-                this.updateUI();
-            }
-        }
+        // Update physics
+        this.updatePhysics();
         
         // Update game state
         this.update();
         
+        // Update stats if available
+        if (this.stats) {
+            this.stats.begin();
+        }
+        
         // Render scene
         this.renderer.render(this.scene, this.camera);
+        
+        // End stats if available
+        if (this.stats) {
+            this.stats.end();
+        }
     }
 
     waitForDiscToStop(disc, checkInterval = 100, maxChecks = 200) {
