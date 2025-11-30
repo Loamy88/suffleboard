@@ -290,7 +290,7 @@ class ShuffleboardGame {
             this.cameraController = new CameraController(this.camera, this.renderer);
             
             // Set initial camera position based on game mode
-            this.resetCamera();
+            this.cameraController.resetCamera();
             
         } catch (error) {
             console.error('Error setting up camera:', error);
