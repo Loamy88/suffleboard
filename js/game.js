@@ -137,55 +137,61 @@ class ShuffleboardGame {
         }
     }
 
-    setupScene() {
-        // Create scene
-        this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x87CEEB); // Sky blue background
-        
-        // Create renderer
-        this.renderer = new THREE.WebGLRenderer({
-            antialias: this.settings.graphics.antialias,
-            alpha: true
-        });
-        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.shadowMap.enabled = this.settings.graphics.shadows;
-        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1.2;
-        
-        // Add renderer to container
-        const container = document.getElementById('game-container');
-        if (!container) {
-            throw new Error('Game container element not found');
-        }
-        container.appendChild(this.renderer.domElement);
-        
-        // Make sure the DOM is updated before proceeding
-        return new Promise(resolve => {
-            requestAnimationFrame(() => {
-                // Setup camera after renderer is in the DOM
-                this.setupCamera();
-                
-                // Handle window resize
-                window.addEventListener('resize', () => this.onWindowResize(), false);
-                
-                // Add stats for performance monitoring (optional)
-                try {
-                    this.stats = new Stats.default();
-                    this.stats.domElement.style.position = 'absolute';
-                    this.stats.domElement.style.top = '10px';
-                    this.stats.domElement.style.left = '10px';
-                    this.stats.domElement.style.display = 'none'; // Hidden by default
-                    container.appendChild(this.stats.domElement);
-                } catch (e) {
-                    console.warn('Could not initialize Stats:', e);
-                    this.stats = null;
-                }
-                
-                resolve();
+    async setupScene() {
+        try {
+            // Create scene
+            this.scene = new THREE.Scene();
+            this.scene.background = new THREE.Color(0x87CEEB); // Sky blue background
+            
+            // Create renderer
+            this.renderer = new THREE.WebGLRenderer({
+                antialias: this.settings.graphics.antialias,
+                alpha: true,
+                antialias: true
             });
-        });
+            this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            this.renderer.setSize(window.innerWidth, window.innerHeight);
+            this.renderer.shadowMap.enabled = this.settings.graphics.shadows;
+            this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            this.renderer.toneMappingExposure = 1.2;
+            
+            // Add renderer to container
+            const container = document.getElementById('game-container');
+            if (!container) {
+                throw new Error('Game container element not found');
+            }
+            
+            // Clear the container and append the renderer
+            container.innerHTML = '';
+            container.appendChild(this.renderer.domElement);
+            
+            // Force a reflow to ensure the DOM is updated
+            await new Promise(resolve => requestAnimationFrame(resolve));
+            
+            // Setup camera after renderer is in the DOM
+            this.setupCamera();
+            
+            // Handle window resize
+            window.addEventListener('resize', () => this.onWindowResize(), false);
+            
+            // Add stats for performance monitoring (optional)
+            try {
+                this.stats = new Stats.default();
+                this.stats.domElement.style.position = 'absolute';
+                this.stats.domElement.style.top = '10px';
+                this.stats.domElement.style.left = '10px';
+                this.stats.domElement.style.display = 'none'; // Hidden by default
+                container.appendChild(this.stats.domElement);
+            } catch (e) {
+                console.warn('Could not initialize Stats:', e);
+                this.stats = null;
+            }
+            
+        } catch (error) {
+            console.error('Error setting up scene:', error);
+            throw error;
+        }
     }
 
     setupCamera() {
@@ -260,20 +266,36 @@ class ShuffleboardGame {
     }
 
     setupCamera() {
-        // Create camera with aspect ratio based on window size
-        const aspect = window.innerWidth / window.innerHeight;
-        this.camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000);
-        
-        // Make sure renderer.domElement is available
-        if (!this.renderer || !this.renderer.domElement) {
-            throw new Error('Renderer or renderer.domElement not available');
+        try {
+            // Create camera with aspect ratio based on window size
+            const aspect = window.innerWidth / window.innerHeight;
+            this.camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000);
+            
+            // Make sure renderer and its DOM element are available
+            if (!this.renderer) {
+                throw new Error('Renderer not initialized');
+            }
+            
+            if (!this.renderer.domElement) {
+                throw new Error('Renderer DOM element not available');
+            }
+            
+            // Verify the DOM element is actually in the document
+            if (!document.body.contains(this.renderer.domElement)) {
+                console.warn('Renderer DOM element is not in the document. Appending to body.');
+                document.body.appendChild(this.renderer.domElement);
+            }
+            
+            // Initialize camera controller with the renderer
+            this.cameraController = new CameraController(this.camera, this.renderer);
+            
+            // Set initial camera position based on game mode
+            this.resetCamera();
+            
+        } catch (error) {
+            console.error('Error setting up camera:', error);
+            throw error; // Re-throw to be handled by the caller
         }
-        
-        // Initialize camera controller
-        this.cameraController = new CameraController(this.camera, this.renderer.domElement);
-        
-        // Set initial camera position based on game mode
-        this.resetCamera();
     }
 
     setupLights() {
