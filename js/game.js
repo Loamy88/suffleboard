@@ -27,6 +27,9 @@ class ShuffleboardGame {
         
         // Set up physics
         this.setupPhysics();
+
+        // Store world in scene's userData for easy access
+        this.scene.userData.world = this.world;
         
         // Create game objects
         this.board = new Board(this.scene, this.world);
@@ -396,5 +399,6 @@ class ShuffleboardGame {
 window.addEventListener('load', () => {
     const game = new ShuffleboardGame();
 });
+
 
 
