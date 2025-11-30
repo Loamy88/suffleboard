@@ -686,35 +686,33 @@ class ShuffleboardGame {
 
 // Start the game when the page loads
 window.addEventListener('load', () => {
-    // Remove any Detector code if present
-    const game = new ShuffleboardGame();
-});
-
-// Export the game class for debugging
-if (typeof module !== 'undefined' && module.exports) {
-    // Node.js/CommonJS
-    module.exports = ShuffleboardGame;
-} else {
-    // Browser global
-    window.ShuffleboardGame = ShuffleboardGame;
-}
-
-// Initialize the game when the DOM is fully loaded
-document.addEventListener('DOMContentLoaded', () => {
     // Check for WebGL support
-    if (!Detector.webgl) {
-        Detector.addGetWebGLMessage();
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    
+    if (!gl) {
+        const message = 'WebGL is not supported in your browser. Please try using a modern browser like Chrome, Firefox, or Edge.';
+        alert(message);
+        console.error(message);
         return;
     }
     
-    // Create and start the game
-    window.game = new ShuffleboardGame();
+    // Initialize the game
+    const game = new ShuffleboardGame();
+    
+    // Make game available globally for debugging
+    window.ShuffleboardGame = ShuffleboardGame;
+    window.game = game;
     
     // Handle window unload
     window.addEventListener('beforeunload', () => {
-        if (window.game) {
-            window.game.cleanup();
-            window.game = null;
+        if (game.cleanup) {
+            game.cleanup();
         }
     });
 });
+
+// Export the game class for Node.js/CommonJS if needed
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = ShuffleboardGame;
+}
