@@ -11,75 +11,98 @@ import { clamp, randomInt, lerp } from './utils.js';
 
 class ShuffleboardGame {
     constructor() {
-        // Core Three.js objects
-        this.scene = null;
-        this.camera = null;
-        this.renderer = null;
-        this.clock = new THREE.Clock();
-        
-        // Physics
-        this.world = null;
-        this.timeStep = 1 / 60;
-        this.maxSubSteps = 3;
-        
-        // Game objects
-        this.board = null;
-        this.players = [];
-        this.currentPlayerIndex = 0;
-        this.discs = [];
-        
-        // Game state
-        this.gameState = 'loading'; // loading, menu, aiming, charging, shooting, scoring, gameOver
-        this.isPaused = false;
-        this.scores = [0, 0];
-        this.winningScore = 75;
-        this.round = 1;
-        this.turnTimeLimit = 30; // seconds
-        this.turnTimer = 0;
-        this.turnTimerInterval = null;
-        
-        // UI
-        this.ui = new UIManager();
-        this.input = new InputHandler(this);
-        this.cameraController = null;
-        
-        // Settings
-        this.settings = {
-            graphics: {
-                quality: 'medium', // low, medium, high
-                shadows: true,
-                antialias: true,
-                pixelRatio: window.devicePixelRatio || 1
-            },
-            audio: {
-                masterVolume: 0.7,
-                musicVolume: 0.5,
-                sfxVolume: 0.8,
-                enabled: true
-            },
-            controls: {
-                sensitivity: 0.002,
-                invertY: false,
-                keybinds: {
-                    forward: 'KeyW',
-                    back: 'KeyS',
-                    left: 'KeyA',
-                    right: 'KeyD',
-                    jump: 'Space',
-                    menu: 'Escape'
+        try {
+            console.log('Initializing ShuffleboardGame...');
+            
+            // Core Three.js objects
+            this.scene = null;
+            this.camera = null;
+            this.renderer = null;
+            this.clock = new THREE.Clock();
+            this.stats = null;
+            
+            // Physics
+            this.world = null;
+            this.timeStep = 1 / 60;
+            this.maxSubSteps = 3;
+            
+            // Game objects
+            this.board = null;
+            this.players = [];
+            this.currentPlayerIndex = 0;
+            this.discs = [];
+            
+            // Game state
+            this.gameState = 'loading'; // loading, menu, playing, paused, gameOver
+            this.isPaused = false;
+            this.scores = [0, 0];
+            this.winningScore = 75;
+            this.round = 1;
+            this.turnTimeLimit = 30; // seconds
+            this.turnTimer = 0;
+            this.turnTimerInterval = null;
+            
+            // Debug mode
+            this.debug = {
+                enabled: false,
+                logStateChanges: true,
+                logInput: false
+            };
+            
+            // UI
+            this.ui = new UIManager();
+            this.input = new InputHandler(this);
+            this.cameraController = null;
+            
+            // Settings
+            this.settings = {
+                graphics: {
+                    quality: 'medium', // low, medium, high
+                    shadows: true,
+                    antialias: true,
+                    pixelRatio: Math.min(window.devicePixelRatio || 1, 2)
+                },
+                audio: {
+                    masterVolume: 0.7,
+                    musicVolume: 0.5,
+                    sfxVolume: 0.8,
+                    enabled: true
+                },
+                controls: {
+                    sensitivity: 0.002,
+                    invertY: false,
+                    keybinds: {
+                        forward: 'KeyW',
+                        back: 'KeyS',
+                        left: 'KeyA',
+                        right: 'KeyD',
+                        jump: 'Space',
+                        menu: 'Escape'
+                    }
+                },
+                game: {
+                    difficulty: 'medium', // easy, medium, hard
+                    aiEnabled: true,
+                    turnTimeLimit: 30,
+                    winningScore: 75,
+                    cameraMode: 'follow' // follow, free, orbit
                 }
-            },
-            game: {
-                difficulty: 'medium', // easy, medium, hard
-                aiEnabled: true,
-                turnTimeLimit: 30,
-                winningScore: 75,
-                cameraMode: 'follow' // follow, free, orbit
-            }
-        };
-        
-        // Initialize the game
-        this.init();
+            };
+            
+            // Bind methods that are used as event handlers
+            this.onWindowResize = this.onWindowResize.bind(this);
+            this.animate = this.animate.bind(this);
+            
+            // Initialize the game
+            this.init().catch(error => {
+                console.error('Failed to initialize game:', error);
+                this.ui.showError('Failed to initialize game. Please check the console for details.');
+            });
+            
+        } catch (error) {
+            console.error('Error in ShuffleboardGame constructor:', error);
+            throw error;
+        }
     }
 
     async init() {
@@ -176,12 +199,12 @@ class ShuffleboardGame {
             
             // Add stats for performance monitoring (optional)
             try {
-                this.stats = new Stats.default();
-                this.stats.domElement.style.position = 'absolute';
-                this.stats.domElement.style.top = '10px';
-                this.stats.domElement.style.left = '10px';
-                this.stats.domElement.style.display = 'none'; // Hidden by default
-                container.appendChild(this.stats.domElement);
+                this.stats = new Stats();
+                this.stats.dom.style.position = 'absolute';
+                this.stats.dom.style.top = '10px';
+                this.stats.dom.style.left = '10px';
+                this.stats.dom.style.display = 'none'; // Hidden by default
+                container.appendChild(this.stats.dom);
             } catch (e) {
                 console.warn('Could not initialize Stats:', e);
                 this.stats = null;
@@ -194,15 +217,20 @@ class ShuffleboardGame {
     }
 
     setupCamera() {
-        // Create camera with aspect ratio based on window size
-        const aspect = window.innerWidth / window.innerHeight;
-        this.camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000);
-        
-        // Initialize camera controller
-        this.cameraController = new CameraController(this.camera, this.renderer.domElement);
-        
-        // Set initial camera position based on game mode
-        this.resetCamera();
+        try {
+            // Create camera with aspect ratio based on window size
+            const aspect = window.innerWidth / window.innerHeight;
+            this.camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000);
+            
+            // Initialize camera controller
+            this.cameraController = new CameraController(this.camera, this.renderer.domElement);
+            
+            // Set initial camera position based on game mode
+            this.cameraController.resetCamera();
+        } catch (error) {
+            console.error('Error in setupCamera:', error);
+            throw error;
+        }
     }
 
     setupPhysics() {
@@ -264,36 +292,31 @@ class ShuffleboardGame {
         };
     }
 
-    setupCamera() {
+    setupPlayers() {
         try {
-            // Create camera with aspect ratio based on window size
-            const aspect = window.innerWidth / window.innerHeight;
-            this.camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000);
+            // Clear any existing players
+            this.players = [];
             
-            // Make sure renderer and its DOM element are available
-            if (!this.renderer) {
-                throw new Error('Renderer not initialized');
-            }
+            // Create player 1 (human)
+            const player1 = new Player(0, false); // Player 1 is human
+            this.players.push(player1);
             
-            if (!this.renderer.domElement) {
-                throw new Error('Renderer DOM element not available');
-            }
+            // Create player 2 (AI if enabled, otherwise human)
+            const player2 = new Player(1, this.settings.game.aiEnabled);
+            this.players.push(player2);
             
-            // Verify the DOM element is actually in the document
-            if (!document.body.contains(this.renderer.domElement)) {
-                console.warn('Renderer DOM element is not in the document. Appending to body.');
-                document.body.appendChild(this.renderer.domElement);
-            }
+            // Set current player to player 1
+            this.currentPlayerIndex = 0;
             
-            // Initialize camera controller with the renderer
-            this.cameraController = new CameraController(this.camera, this.renderer);
+            // Initialize scores
+            this.scores = [0, 0];
             
-            // Set initial camera position based on game mode
-            this.cameraController.resetCamera();
+            // Update UI with player information
+            this.ui.updatePlayerInfo(this.players[0], this.players[1]);
             
         } catch (error) {
-            console.error('Error setting up camera:', error);
-            throw error; // Re-throw to be handled by the caller
+            console.error('Error setting up players:', error);
+            throw error;
         }
     }
 
@@ -618,146 +641,189 @@ class ShuffleboardGame {
             // Play again callback
             this.showMainMenu();
         });
-        
-        // Play victory sound
-        this.playSound('victory', 0.8);
-    }
-
-    onWindowResize() {
-        // Update camera aspect ratio
         const width = window.innerWidth;
         const height = window.innerHeight;
         
-        if (this.camera) {
-            this.camera.aspect = width / height;
-            this.camera.updateProjectionMatrix();
-        }
+        // Update camera
+        this.camera.aspect = width / height;
+        this.camera.updateProjectionMatrix();
         
         // Update renderer
-        if (this.renderer) {
-            this.renderer.setSize(width, height);
-            this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        }
+        this.renderer.setSize(width, height);
+        this.renderer.setPixelRatio(this.settings.graphics.pixelRatio);
         
-        // Update post-processing if enabled
-        if (this.composer) {
-            this.composer.setSize(width, height);
-        }
-        
-        // Update UI
-        if (this.ui) {
+        // Update UI if available
+        if (this.ui && typeof this.ui.onWindowResize === 'function') {
             this.ui.onWindowResize(width, height);
+        } else if (this.debug.enabled) {
+            console.debug('UI manager not available or missing onWindowResize method');
+        }
+        
+        if (this.debug.enabled) {
+            console.debug(`Window resized to ${width}x${height}`);
         }
     }
 
     animate() {
-        requestAnimationFrame(() => this.animate());
-        
-        const delta = this.clock.getDelta();
-        
-        // Update physics
-        this.updatePhysics();
-        
-        // Update game state
-        this.update();
-        
-        // Update stats if available
-        if (this.stats) {
-            this.stats.begin();
-        }
-        
-        // Render scene
-        this.renderer.render(this.scene, this.camera);
-        
-        // End stats if available
-        if (this.stats) {
-            this.stats.end();
+        try {
+            // Start stats if available
+            if (this.stats) {
+                this.stats.begin();
+            }
+            
+            // Calculate delta time
+            const delta = this.clock.getDelta();
+            
+            // Update physics
+            if (this.world && !this.isPaused) {
+                this.world.step(this.timeStep, delta, this.maxSubSteps);
+            }
+            
+            // Update game objects
+            if (this.board && this.board.update) {
+                this.board.update(delta);
+            }
+            
+            // Update players
+            this.players.forEach(player => {
+                if (player && player.update) {
+                    player.update(delta);
+                }
+            });
+            
+            // Update camera controller
+            if (this.cameraController && this.cameraController.update) {
+                this.cameraController.update(delta);
+            }
+            
+            // Render the scene
+            if (this.renderer && this.scene && this.camera) {
+                this.renderer.render(this.scene, this.camera);
+            }
+            
+            // End stats if available
+            if (this.stats) {
+                this.stats.end();
+            }
+            
+            // Continue the animation loop
+            this.animationFrameId = requestAnimationFrame(this.animate);
+            
+        } catch (error) {
+            console.error('Error in animation loop:', error);
+            // Try to recover by continuing the animation loop
+            if (this.animationFrameId) {
+                cancelAnimationFrame(this.animationFrameId);
+            }
+            this.animationFrameId = requestAnimationFrame(this.animate);
         }
     }
 
-    waitForDiscToStop(disc, checkInterval = 100, maxChecks = 200) {
-        if (this.gameState === 'gameOver') return;
+    /**
+     * Clean up resources and remove event listeners
+     */
+    cleanup() {
+    try {
+        console.log('Cleaning up game resources...');
         
-        this.gameState = 'shooting';
-        let attempts = 0;
-        let lastPosition = new THREE.Vector3();
-        let stationaryFrames = 0;
-        const stationaryThreshold = 0.001; // Minimum movement to be considered moving
-        const requiredStationaryFrames = 3; // Number of frames disc must be stationary to be considered stopped
+        // Stop the animation loop
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
+        }
         
-        const checkIfStopped = () => {
-            if (this.gameState === 'gameOver') return;
-            
-            attempts++;
-            const currentPosition = disc.getPosition();
-            const distanceMoved = lastPosition.distanceTo(currentPosition);
-            
-            // Update last position
-            lastPosition.copy(currentPosition);
-            
-            // Check if disc is moving slowly or out of bounds
-            const isMoving = distanceMoved > stationaryThreshold && 
-                            !disc.isOutOfBounds() && 
-                            attempts < maxChecks;
-            
-            if (!isMoving) {
-                stationaryFrames++;
-            } else {
-                stationaryFrames = 0;
-            }
-            
-            // If disc has been stationary for required frames or max attempts reached
-            if (stationaryFrames >= requiredStationaryFrames || attempts >= maxChecks) {
-                // Small delay before checking score to ensure physics has settled
-                setTimeout(() => {
-                    if (this.gameState !== 'gameOver') {
-                        this.checkScoring();
+        // Remove event listeners
+        window.removeEventListener('resize', this.onWindowResize);
+        
+        // Clean up Three.js resources
+        if (this.scene) {
+            // Dispose of geometries, materials, and textures
+            this.scene.traverse(object => {
+                if (object.geometry) {
+                    object.geometry.dispose();
+                }
+                
+                if (object.material) {
+                    if (Array.isArray(object.material)) {
+                        object.material.forEach(material => {
+                            if (material.map) material.map.dispose();
+                            if (material.lightMap) material.lightMap.dispose();
+                            if (material.bumpMap) material.bumpMap.dispose();
+                            if (material.normalMap) material.normalMap.dispose();
+                            if (material.specularMap) material.specularMap.dispose();
+                            if (material.envMap) material.envMap.dispose();
+                            material.dispose();
+                        });
+                    } else {
+                        const material = object.material;
+                        if (material.map) material.map.dispose();
+                        if (material.lightMap) material.lightMap.dispose();
+                        if (material.bumpMap) material.bumpMap.dispose();
+                        if (material.normalMap) material.normalMap.dispose();
+                        if (material.specularMap) material.specularMap.dispose();
+                        if (material.envMap) material.envMap.dispose();
+                        material.dispose();
                     }
-                }, 200);
-                return;
-            }
+                }
+            });
             
-            // Continue checking
-            this.checkInterval = setTimeout(checkIfStopped, checkInterval);
-        };
-        
-        // Initial position
-        lastPosition.copy(disc.getPosition());
-        
-        // Start checking
-        this.checkInterval = setTimeout(checkIfStopped, checkInterval);
-    }
-}
-
-// Start the game when the page loads
-window.addEventListener('load', () => {
-    // Check for WebGL support
-    const canvas = document.createElement('canvas');
-    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-    
-    if (!gl) {
-        const message = 'WebGL is not supported in your browser. Please try using a modern browser like Chrome, Firefox, or Edge.';
-        alert(message);
-        console.error(message);
-        return;
-    }
-    
-    // Initialize the game
-    const game = new ShuffleboardGame();
-    
-    // Make game available globally for debugging
-    window.ShuffleboardGame = ShuffleboardGame;
-    window.game = game;
-    
-    // Handle window unload
-    window.addEventListener('beforeunload', () => {
-        if (game.cleanup) {
-            game.cleanup();
+            // Clear the scene
+            while (this.scene.children.length > 0) {
+                this.scene.remove(this.scene.children[0]);
+            }
+            this.scene = null;
         }
-    });
-});
-
-// Export the game class for Node.js/CommonJS if needed
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = ShuffleboardGame;
+        
+        // Clean up physics world
+        if (this.world) {
+            // Remove all bodies
+            while (this.world.bodies.length > 0) {
+                this.world.removeBody(this.world.bodies[0]);
+            }
+            this.world = null;
+        }
+        
+        // Clean up renderer
+        if (this.renderer) {
+            this.renderer.dispose();
+            this.renderer.forceContextLoss();
+            if (this.renderer.domElement && this.renderer.domElement.parentNode) {
+                this.renderer.domElement.parentNode.removeChild(this.renderer.domElement);
+            }
+            this.renderer = null;
+        }
+        
+        // Clean up camera controller
+        if (this.cameraController) {
+            if (typeof this.cameraController.dispose === 'function') {
+                this.cameraController.dispose();
+            }
+            this.cameraController = null;
+        }
+        
+        // Clean up UI
+        if (this.ui && typeof this.ui.cleanup === 'function') {
+            this.ui.cleanup();
+        }
+        
+        // Clean up input
+        if (this.input && typeof this.input.cleanup === 'function') {
+            this.input.cleanup();
+        }
+        
+        // Clean up stats
+        if (this.stats) {
+            const statsElement = this.stats.dom;
+            if (statsElement && statsElement.parentNode) {
+                statsElement.parentNode.removeChild(statsElement);
+            }
+            this.stats = null;
+        }
+        
+        console.log('Game cleanup completed');
+    } catch (error) {
+        console.error('Error during cleanup:', error);
+    }
 }
+}
+
