@@ -1051,6 +1051,94 @@ class ShuffleboardGame {
             console.warn('Error in disposeMaterial:', e);
         }
     }
+    
+    /**
+     * Sets up all game event listeners
+     * @private
+     */
+    setupEventListeners() {
+        try {
+            console.log('[DEBUG] Setting up game event listeners...');
+            
+            // Window resize handler
+            window.addEventListener('resize', this.onWindowResize);
+            
+            // UI event listeners
+            if (this.ui) {
+                // Game controls
+                this.ui.on('startGame', () => this.startGame());
+                this.ui.on('pauseGame', () => this.togglePause());
+                this.ui.on('resumeGame', () => this.resumeGame());
+                this.ui.on('quitToMenu', () => this.returnToMainMenu());
+                this.ui.on('restartGame', () => this.restartGame());
+                
+                // Settings changes
+                this.ui.on('volumeChange', (volume) => {
+                    this.settings.audio.masterVolume = volume;
+                    this.applyAudioSettings();
+                });
+                
+                this.ui.on('graphicsQualityChange', (quality) => {
+                    this.settings.graphics.quality = quality;
+                    this.applyGraphicsSettings();
+                });
+                
+                // Player actions
+                this.ui.on('playerShoot', (power, angle) => {
+                    if (this.getState() === 'playing' && this.currentPlayer) {
+                        this.currentPlayer.shoot(power, angle);
+                    }
+                });
+                
+                // Error handling
+                this.ui.on('error', (error) => {
+                    console.error('UI Error:', error);
+                    this.showError(error.message || 'An unknown UI error occurred');
+                });
+            }
+            
+            // Input handling
+            if (this.input) {
+                // Keyboard controls
+                this.input.on('keydown', (key) => this.handleKeyDown(key));
+                this.input.on('keyup', (key) => this.handleKeyUp(key));
+                
+                // Mouse/touch controls
+                this.input.on('pointerdown', (position) => this.handlePointerDown(position));
+                this.input.on('pointermove', (position) => this.handlePointerMove(position));
+                this.input.on('pointerup', (position) => this.handlePointerUp(position));
+            }
+            
+            // Game state change listeners
+            this.onStateChange((newState, oldState) => {
+                console.log(`[DEBUG] Game state changed: ${oldState} -> ${newState}`);
+                
+                // Update UI based on state changes
+                if (this.ui) {
+                    switch (newState) {
+                        case 'menu':
+                            this.ui.showScreen('menu');
+                            break;
+                        case 'playing':
+                            this.ui.showScreen('game');
+                            break;
+                        case 'paused':
+                            this.ui.showMessage('Game Paused', 'The game is paused', 'Resume', () => this.resumeGame());
+                            break;
+                        case 'gameOver':
+                            this.ui.showScreen('gameOver');
+                            break;
+                    }
+                }
+            });
+            
+            console.log('[DEBUG] Game event listeners set up successfully');
+            
+        } catch (error) {
+            console.error('Error setting up event listeners:', error);
+            throw error;
+        }
+    }
 
 }
 
