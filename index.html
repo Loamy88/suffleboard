@@ -138,7 +138,14 @@
         </div>
     </div>
 
-    <script type="module" src="js/game.js"></script>
+    <script type="module">
+        import { initGame } from './js/game.js';
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initGame);
+        } else {
+            initGame();
+        }
+    </script>
 </body>
-
 </html>
