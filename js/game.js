@@ -37,9 +37,13 @@ class ShuffleboardGame {
             this.currentPlayerIndex = 0;
             this.discs = [];
             
-            // Game state
-            this.gameState = 'loading'; // loading, menu, playing, paused, gameOver
-            this.isPaused = false;
+            // Game state management
+            this.state = {
+                value: 'loading', // loading, menu, playing, paused, gameOver
+                validStates: new Set(['loading', 'menu', 'playing', 'paused', 'gameOver']),
+                onStateChangeCallbacks: new Set(),
+                isPaused: false
+            };
             this.scores = [0, 0];
             this.winningScore = 75;
             this.round = 1;
@@ -94,9 +98,58 @@ class ShuffleboardGame {
                 }
             };
             
+            // State management methods
+            this.getState = () => this.state.value;
+            
+            this.setState = (newState) => {
+                if (!this.state.validStates.has(newState)) {
+                    console.warn(`Invalid game state: ${newState}`);
+                    return;
+                }
+                
+                if (this.debug.logStateChanges) {
+                    console.log(`Game state: ${this.state.value} -> ${newState}`);
+                }
+                
+                const oldState = this.state.value;
+                this.state.value = newState;
+                
+                // Notify listeners of state change
+                this.state.onStateChangeCallbacks.forEach(callback => {
+                    try {
+                        callback(newState, oldState);
+                    } catch (error) {
+                        console.error('Error in state change callback:', error);
+                    }
+                });
+            };
+            
+            this.onStateChange = (callback) => {
+                if (typeof callback === 'function') {
+                    this.state.onStateChangeCallbacks.add(callback);
+                    return () => this.state.onStateChangeCallbacks.delete(callback);
+                }
+                return () => {};
+            };
+            
             // Bind methods that are used as event handlers
             this.onWindowResize = () => {
-                // Handle window resize
+                try {
+                    if (!this.renderer || !this.camera) return;
+                    
+                    const width = window.innerWidth;
+                    const height = window.innerHeight;
+                    
+                    this.camera.aspect = width / height;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.setSize(width, height);
+                    
+                    if (this.cameraController?.onWindowResize) {
+                        this.cameraController.onWindowResize();
+                    }
+                } catch (error) {
+                    console.error('Error in window resize handler:', error);
+                }
             };
             
             this.animate = () => {

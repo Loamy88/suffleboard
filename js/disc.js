@@ -11,6 +11,7 @@ class Disc {
         this.height = 0.1;
         this.scored = false;
         this.points = 0;
+        this.hasBeenShot = false;
 
         // Create visual representation
         const geometry = new THREE.CylinderGeometry(
@@ -56,6 +57,23 @@ class Disc {
             this.mesh.position.copy(this.body.position);
             this.mesh.quaternion.copy(this.body.quaternion);
         }
+    }
+
+    reset() {
+        if (this.body) {
+            this.body.velocity.set(0, 0, 0);
+            this.body.angularVelocity.set(0, 0, 0);
+            this.body.position.set(this.initialX || 0, this.height / 2, this.initialZ || 0);
+            this.body.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), Math.PI / 2);
+        }
+        if (this.mesh) {
+            this.mesh.position.set(this.initialX || 0, this.height / 2, this.initialZ || 0);
+            this.mesh.quaternion.set(0, 0, 0, 1);
+            this.mesh.rotation.x = Math.PI / 2;
+        }
+        this.scored = false;
+        this.points = 0;
+        this.hasBeenShot = false;
     }
 
     remove() {

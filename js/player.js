@@ -30,16 +30,27 @@ class Player {
     createDiscs() {
         const discSpacing = 0.5;
         const startX = -0.75; // Start position for first disc
+        const startZ = -7.5;  // Slightly in front of the player
+        
+        // Clear existing discs if any
+        if (this.discs.length > 0) {
+            this.discs.forEach(disc => disc.remove());
+            this.discs = [];
+        }
         
         for (let i = 0; i < 4; i++) {
+            const x = startX + i * discSpacing;
             const disc = new Disc(
                 this.scene,
-                this.scene.userData.world, // World is added to scene.userData in game.js
-                startX + i * discSpacing,
-                -7.5, // Slightly in front of the player
+                this.scene.userData?.world, // Optional chaining for safety
+                x,
+                startZ,
                 this.color,
                 this.isAI ? 2 : 1 // Player numbers: 1 for human, 2 for AI
             );
+            // Store initial positions for reset
+            disc.initialX = x;
+            disc.initialZ = startZ;
             this.discs.push(disc);
         }
     }
@@ -118,11 +129,32 @@ class Player {
         this.score += points;
     }
     
+    resetDiscs() {
+        this.discs.forEach(disc => {
+            if (disc && typeof disc.reset === 'function') {
+                disc.reset();
+            }
+        });
+        this.currentDiscIndex = 0;
+    }
+    
     reset() {
         this.currentDiscIndex = 0;
         this.discs.forEach(disc => disc.remove());
         this.discs = [];
         this.createDiscs();
+        
+        // Reset stick position
+        if (this.stick) {
+            this.stick.position.set(0, 0.3, -8);
+            this.stick.rotation.set(Math.PI/2, 0, -Math.PI/2);
+        }
+        
+        // Reset player state
+        this.angle = 0;
+        this.currentPower = 0;
+        this.isCharging = false;
+        this.position.set(0, 0.2, -8);
     }
 }
 
