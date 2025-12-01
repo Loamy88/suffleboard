@@ -1,8 +1,12 @@
+console.log('[DEBUG] Starting game.js execution');
+
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import * as CANNON from 'cannon-es';
 import Stats from 'three/examples/jsm/libs/stats.module';
 import Board from './board.js';
+
+console.log('[DEBUG] All imports loaded successfully');
 import Player from './player.js';
 import CameraController from './cameraController.js';
 import InputHandler from './inputHandler.js';
@@ -11,6 +15,7 @@ import { clamp, randomInt, lerp } from './utils.js';
 
 class ShuffleboardGame {
     constructor() {
+        console.log('[DEBUG] ShuffleboardGame constructor called');
         try {
             console.log('Initializing ShuffleboardGame...');
             
@@ -106,13 +111,15 @@ class ShuffleboardGame {
     }
 
     async init() {
+        console.log('[DEBUG] init() method started');
         try {
             console.log('Initializing game...');
             
             // Initialize UI
-            console.log('Initializing UI...');
+            console.log('[DEBUG] Initializing UI...');
             this.ui.init(this);
             this.ui.updateLoadingText('Initializing game...');
+            console.log('[DEBUG] UI initialized');
             
             // Set up scene (this will also set up the camera)
             console.log('Setting up scene...');
@@ -154,14 +161,17 @@ class ShuffleboardGame {
             console.log('Finalizing initialization...');
             await new Promise(resolve => setTimeout(resolve, 500));
             
-            console.log('Hiding loading screen...');
+            console.log('[DEBUG] Hiding loading screen...');
             this.ui.hideLoadingScreen();
+            console.log('[DEBUG] Loading screen hidden');
             
-            console.log('Showing main menu...');
+            console.log('[DEBUG] Showing main menu...');
             this.showMainMenu();
+            console.log('[DEBUG] Main menu shown');
             
-            console.log('Starting game loop...');
+            console.log('[DEBUG] Starting game loop...');
             this.animate();
+            console.log('[DEBUG] Game loop started');
             
             console.log('Game initialization complete');
             
