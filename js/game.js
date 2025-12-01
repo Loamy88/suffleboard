@@ -226,11 +226,10 @@ class ShuffleboardGame {
             await new Promise(resolve => requestAnimationFrame(resolve));
             
             // Setup camera after renderer is in the DOM
-            const camera = this.setupCamera();
+            this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
             
-            // Initialize camera controller after renderer is ready
-            this.cameraController = new CameraController(camera, this.renderer.domElement);
-            this.cameraController.resetCamera();
+            // Initialize camera controller with renderer instance, not just the DOM element
+            this.cameraController = new CameraController(this.camera, this.renderer);
             
             // Handle window resize
             window.addEventListener('resize', () => this.onWindowResize(), false);
