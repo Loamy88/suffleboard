@@ -855,15 +855,19 @@ class ShuffleboardGame {
     }
 }
 
-// Create and start the game when the DOM is fully loaded
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        console.log('[DEBUG] DOM fully loaded, initializing game...');
-        const game = new ShuffleboardGame();
-        window.game = game; // Make it accessible in the console for debugging
-    });
-} else {
-    console.log('[DEBUG] DOM already loaded, initializing game...');
+}
+
+export { ShuffleboardGame, initGame };
+
+function initGame() {
+    console.log('[DEBUG] Initializing game...');
     const game = new ShuffleboardGame();
     window.game = game; // Make it accessible in the console for debugging
+    
+    // Hide loading overlay when the game is ready
+    const loadingOverlay = document.getElementById('loading-overlay');
+    if (loadingOverlay) {
+        loadingOverlay.style.display = 'none';
+    }
+    return game;
 }
